@@ -3,7 +3,7 @@ namespace BY.WinForm
 {
     public partial class Form1 : Form
     {
-        
+
         public Form1()
         {
             InitializeComponent();
@@ -17,12 +17,12 @@ namespace BY.WinForm
         private void button1_Click(object sender, EventArgs e)
         {
 
-            if (!Program.FileReader(this.textBox1.Text))
+            if (!Program.Init(this.textBox1.Text))
             {
                 MessageBox.Show("文件读取错误", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
-            { this.拓广文法ToolStripMenuItem_Click(this.listView1, e); }
+            { Program.ShowS(this.listView1); }
         }
 
         private void 拓广文法ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -35,19 +35,14 @@ namespace BY.WinForm
             Program.ShowXM(this.listView1);
         }
 
-        private void aCTION表ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void gOTO表ToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Program.test();
+        }
+
+        private void dFAToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

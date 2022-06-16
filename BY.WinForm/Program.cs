@@ -24,21 +24,11 @@
  *            佛祖保佑     永不宕机     永无BUG
  */
 
-
 namespace BY.WinForm
 {
 
-    internal static class Program
+    internal static partial class Program
     {
-        private static readonly char Start = 'S';                                               //拓广文法的开始符号
-        private static readonly string Sign = "∘";                                              //项目里的标记符号
-        private static readonly Dictionary<char, HashSet<string>> S = new();                    //文法
-        private static readonly Dictionary<char, HashSet<string>> XM = new();                   //由文法构建的项目
-        private static readonly List<char> Vn = new();                                          //拓广非终结符
-        private static readonly List<char> Tn = new();                                          //终结符
-        private static readonly HashSet<char> All = new();                                      //文法里出现的所有字符
-        private static readonly Dictionary<int, HashSet<KeyValuePair<char, string>>> Is = new();//项目集
-        private static readonly Dictionary<int, Dictionary<char, int>> DFA = new();             //DFA
         [STAThread]
         static void Main()
         {
@@ -48,60 +38,40 @@ namespace BY.WinForm
 
         }
 
-        /// <summary>
-        /// 可视化获取文件路径
-        /// </summary>
-        /// <returns>
-        /// 返回文件路径
-        /// </returns>
-        public static string GetFilePath()
-        {
-            var dialog = new OpenFileDialog
-            {
-                Multiselect = false,
-                Title = "选择文件",
-                Filter = "文本文件(*.txt)|*.*",
-                InitialDirectory = @"D:\Data\Data\Desktop"
 
-            };
-
-            dialog.ShowDialog();
-            if (Path.GetExtension(dialog.FileName) == ".txt" || dialog.FileName.Length == 0)
-            { return dialog.FileName; }
-            else
-            {
-                MessageBox.Show("文件类型错误，不为文本文件(.txt)", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return "";
-            }
-        }
 
         /// <summary>
-        /// 从文件中读取文法，被写入S中
+        /// 初始化
         /// </summary>
         /// <param name="path"> 
         /// 打开文件的路径 
         /// </param>
         /// <returns>
-        /// 文件是否成功打开
+        /// 初始化是否成功
         /// </returns>
-        public static bool FileReader(string path)
+        public static bool Init(string path)
         {
             try
             {
                 StreamReader sr = new(path);
                 Program.Clear();
-                Program.Vn.Add(Program.Start);
-                string? line;//文件中的每一行
-                string[] temp;//
 
+                Program.Vn.Add(Program.Start);
+                Program.All.Add(Program.Start);
+
+                string? line;//文件中的每一行
+                var begin = sr.Peek();
+                if (begin == -1) { throw new(); }
+                Program.S.Add(Program.Start, new HashSet<string> { Convert.ToString((char)begin) });
                 while (!sr.EndOfStream)
                 {
                     line = sr.ReadLine();
                     if (line != null)
                     {
                         Program.Vn.Add(line[0]);
+                        Program.All.Add(line[0]);
                         Program.S.Add(Program.Vn.Last(), new());
-                        temp = line.Remove(0, 3).Split('|');
+                        var temp = line.Remove(0, 3).Split('|');
                         foreach (string s in temp)
                         {
                             Program.S[Program.Vn.Last()].Add(s);
@@ -118,11 +88,13 @@ namespace BY.WinForm
                         Program.Tn.Add(E);
                     }
                 }
-                Program.S.Add(Program.Start, new HashSet<string> { Convert.ToString(Program.Vn[0]) });
-                Program.StoXM();
                 sr.Close();
+
+                Program.StoXM();
             }
             catch { return false; }
+
+            Program.Is_DFA_Creater();
 
             return true;
         }
@@ -139,7 +111,7 @@ namespace BY.WinForm
                 //int i = 0;
                 foreach (var e in Program.S[E])
                 {
-                    for (int i = 0; i < e.Length + 1; i++)
+                    for (int i = 0; i <= e.Length; i++)
                     { Program.XM[E].Add(e.Insert(i, Program.Sign)); }
                 }
             }
@@ -147,40 +119,29 @@ namespace BY.WinForm
         /// <summary>
         /// 构建拓广文法的DFA
         /// </summary>
-        public static void DFACreater()
+        private static void Is_DFA_Creater()
         {
-            foreach (var E in Program.DFA)
-            {
-
-            }
-        }
-        public static void IsCreater()
-        {
-            int i = 0;//统计项目集
-            bool same;
-            Program.Is.Add(i, Program.CLOSURE(new()
-            {
-                new(Program.Start, Program.XM[Program.Start].Where(e => e.IndexOf(Program.Sign) == 0).First())
-            }));//先求I0
+            int i = 0, j = 1;//统计项目集
+            bool flag;
+            //先求I0
+            Program.Is.Add(i, Program.CLOSURE(new() { { Program.Start,
+                    Program.XM[Program.Start].Where(e => e.IndexOf(Program.Sign) == 0).ToHashSet() } }));
             while (true)
             {
-                same = false;
-                foreach (var E in Program.Is)
+                flag = true;
+                Program.DFA.Add(i, new());//向DFA中添加第i个项目集
+                //foreach (var item in Program.All)//对于所有字符
+                foreach (var item in Program.Is[i].GetCh())
                 {
-                    foreach (var e in Program.All)
-                    {
-                        var temp = Program.GO(E.Value, e);
-                        foreach (var e_ in Program.Is)
-                        {
-                            if (temp.IsSame(e_.Value)) { same = true; }
-                        }
-                        if (!same)
-                        {
-                            Program.Is.Add(i++, temp);
-                        }
-                    }
-
+                    var temp = Program.GO(Program.Is[i], item);//求GO(I,X)
+                    Program.DFA[i].Add(item, j);
+                    if (!Program.Is.Has(temp))
+                    { Program.Is.Add(j++, temp); }
+                    flag = false;
                 }
+                if (flag && i >= Program.Is.Count - 1)
+                { break; }
+                i++;
             }
         }
         /// <summary>
@@ -192,28 +153,31 @@ namespace BY.WinForm
         /// <returns>
         /// 返回I的闭包
         /// </returns>
-        private static HashSet<KeyValuePair<char, string>> CLOSURE(HashSet<KeyValuePair<char, string>> I)
+        private static Dictionary<char, HashSet<string>> CLOSURE(Dictionary<char, HashSet<string>> I)
         {
 
-            HashSet<KeyValuePair<char, string>> list = new();
+            Dictionary<char, HashSet<string>> list = new();
             int pos;
-            foreach (var E in I)//对于I中的每一个项目E
+            foreach (var E in I)
             {
-                list.Add(E);//E加入list
-                pos = E.Value.IndexOf(Program.Sign);//寻找E标记符位置
-                if (pos != E.Value.Length)//如果标记符不在字符串末尾
+                list.Add(E.Key, new(E.Value));//E加入list
+                foreach (var e in E.Value)//对于E中的每一个项目
                 {
-                    char c = E.Value[pos + 1];//c为标记符后的字符
-                    if (Program.Vn.Count((t) => { return t == c; }) != 0)//若c是非终结符
+                    pos = e.IndexOf(Program.Sign);
+                    if (pos != e.Length - 1)//e的标记符号不在最后
                     {
-                        foreach (var e in Program.XM[c])//将c的所有标记符开始的项目添加到list中
-                        { if (e.IndexOf(Program.Sign) == 0) { list.Add(new(c, e)); } }
+                        char c = e[pos + 1];
+                        if (Program.Vn.Count(it => it == c) != 0)//如果c是非终结符
+                        {
+                            //if (list.Keys.Count(it => it == c) == 0)//list没有c关键字则加入c关键字
+                            list.TryAdd(c, new());
+                            foreach (var v in Program.XM[c])//将c的所有标记符开始的项目添加到list中
+                            { if (v.IndexOf(Program.Sign) == 0) { list[c].Add(v); } }
+                        }
                     }
                 }
-
             }
-
-            return list.OrderBy(e => e.Key).ToHashSet();
+            return list;
         }
 
         /// <summary>
@@ -228,17 +192,27 @@ namespace BY.WinForm
         /// <returns>
         /// 返回转换的项目集
         /// </returns>
-        private static HashSet<KeyValuePair<char, string>> GO(HashSet<KeyValuePair<char, string>> I, char X)
+        private static Dictionary<char, HashSet<string>> GO(Dictionary<char, HashSet<string>> I, char X)
         {
-            HashSet<KeyValuePair<char, string>> list = new HashSet<KeyValuePair<char, string>>();
-
-            foreach (var E in I)//对于项目集I中的每一个项目
+            Dictionary<char, HashSet<string>> list = new();
+            foreach (var E in I)
             {
-                int i = E.Value.IndexOf(Program.Sign);//指出候选式的标记符号位置
-                if (i != 0)//如果不在开头
+                foreach (var e in E.Value)//对于项目集E中的每一个项目e
                 {
-                    if (E.Value[i - 1] == X)//且标记符后一位与X相同
-                    { list.Add(E); }//将E加入list
+                    int pos = e.IndexOf(Program.Sign);//指出候选式的标记符号位置
+                    if (pos != e.Length - 1)//如果不在开头
+                    {
+                        if (e[pos + 1] == X)//且标记符后一位与X相同
+                        {
+                            //合适的项目添加到list中
+                            list.Add(E.Key, new(Program.XM[E.Key].Where((it) =>
+                            {
+                                int p = it.IndexOf(Program.Sign);
+                                if (p != 0) { if (it[p - 1] == X) { return true; } }
+                                return false;
+                            }).ToHashSet()));
+                        }
+                    }
                 }
             }
             return Program.CLOSURE(list);//最后返回list的闭包
@@ -301,12 +275,15 @@ namespace BY.WinForm
         /// <summary>
         /// 成员变量清除
         ///// </summary>
-        public static void Clear()
+        private static void Clear()
         {
             Program.S.Clear();
             Program.XM.Clear();
             Program.Vn.Clear();
             Program.Tn.Clear();
+            Program.Is.Clear();
+            Program.All.Clear();
+            Program.DFA.Clear();
         }
         /// <summary>
         /// 判断两张哈希集合成员是否相同
@@ -320,22 +297,41 @@ namespace BY.WinForm
         /// <returns>
         /// 元素相等则返回true，否则为false
         /// </returns>
-        public static bool IsSame(this HashSet<KeyValuePair<char, string>> src, HashSet<KeyValuePair<char, string>> tar)
+        private static bool IsSame(this Dictionary<char, HashSet<string>> src, Dictionary<char, HashSet<string>> tar)
         {
-            if (src.Count != tar.Count)
-            { return false; }
-            var src_list = src.ToList();
-            var tar_list = tar.ToList();
-            for (int i = 0; i < src_list.Count; i++)
-            {
-                if (src_list[i].Key != tar_list[i].Key) { return false; }
-                if (src_list[i].Value != tar_list[i].Value) { return false; }
-            }
+            if (!src.Keys.OrderBy(e => e).SequenceEqual(tar.Keys.OrderBy(e => e))) { return false; }
+            foreach (var item in src) { if (!item.Value.OrderBy(e => e).SequenceEqual(tar[item.Key].OrderBy(e => e))) { return false; } }
             return true;
         }
+        public static bool Has(this Dictionary<int, Dictionary<char, HashSet<string>>> src, Dictionary<char, HashSet<string>> tar)
+        {
+            foreach (var item in src) { if (item.Value.IsSame(tar)) { return true; } }
+            return false;
+        }
+
+        public static HashSet<char> GetCh(this Dictionary<char, HashSet<string>> src)
+        {
+            HashSet<char> list = new();
+            foreach (var item in src)
+            {
+                foreach (var e in item.Value)
+                {
+                    var pos = e.IndexOf(Program.Sign);
+                    if (pos != e.Length - 1) { list.Add(e[pos + 1]); }
+                }
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// 测试调用
+        /// </summary>
         public static void test()
         {
-            Program.IsCreater();
+            var c = Program.CLOSURE(new() { { 'S', new HashSet<string>() { "∘E" } } });
+            //var b = Program.GO(c, 'a');
+            //(new Dictionary<char, HashSet<string>>() { { 'c', new() { "1111" } } }).IsSame(new Dictionary<char, HashSet<string>>() { { 'c', new() { "111" } } });
+            //Program.IsCreater();
         }
     }
 }
