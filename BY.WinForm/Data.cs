@@ -1,7 +1,7 @@
 ﻿//定义数据结构
 namespace BY.WinForm
 {
-    internal static partial class Program
+    internal static partial class BYKS
     {
         private static readonly char Start = 'S';                                               //拓广文法的开始符号
         private static readonly string Sign = "∘";                                              //项目里的标记符号

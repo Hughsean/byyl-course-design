@@ -23,25 +23,24 @@
  * 
  *            佛祖保佑     永不宕机     永无BUG
  */
+
 //主函数
 namespace BY.WinForm
 {
-    internal static partial class Program
+    internal static partial class BYKS
     {
         [STAThread]
         static void Main()
         {
-
             ApplicationConfiguration.Initialize();
             Application.Run(new Form1());
-
         }
-        /// <summary>
-        /// 测试调用
-        /// </summary>
+
+
+        /// <summary> DEBUG调用 </summary>
         public static void test()
         {
-            var c = Program.CLOSURE(new() { { 'S', new HashSet<string>() { "∘E" } } });
+            var c = BYKS.CLOSURE(new() { { 'S', new HashSet<string>() { "∘E" } } });
             //var b = Program.GO(c, 'a');
             //(new Dictionary<char, HashSet<string>>() { { 'c', new() { "1111" } } }).IsSame(new Dictionary<char, HashSet<string>>() { { 'c', new() { "111" } } });
             //Program.IsCreater();
