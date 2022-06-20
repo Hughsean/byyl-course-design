@@ -138,6 +138,7 @@ namespace BY.WinForm
                 { dataGridView.Rows[i].Cells[dataGridView.Columns[Convert.ToString(e)].Index].Value = BYKS.DFA[i][e]; }
             }
         }
+        #region TODO
         //public static void ShowTable(DataGridView dataGridView)
         //{
         //    dataGridView.Columns.Clear();
@@ -177,5 +178,6 @@ namespace BY.WinForm
         //    }
 
         //}
+        #endregion
     }
 }
