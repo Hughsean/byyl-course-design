@@ -135,7 +135,13 @@ namespace BY.WinForm
             {
                 dataGridView.Rows.Add(i, BYKS.Is[i].MyToString());
                 foreach (var e in BYKS.Is[i].GetCh())
-                { dataGridView.Rows[i].Cells[dataGridView.Columns[Convert.ToString(e)].Index].Value = BYKS.DFA[i][e]; }
+                {
+                    for (int n = 0; n < dataGridView.Columns.Count; n++)
+                    {
+                        if (dataGridView.Columns[n].Name == e.ToString())
+                        { dataGridView.Rows[i].Cells[n].Value = BYKS.DFA[i][e]; break; }
+                    }
+                }
             }
         }
         #region TODO
