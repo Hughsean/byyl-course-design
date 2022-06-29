@@ -144,7 +144,7 @@ namespace BY.WinForm
                 }
             }
         }
-        #region TODO
+        #region //
         //public static void ShowTable(DataGridView dataGridView)
         //{
         //    dataGridView.Columns.Clear();
